@@ -63,33 +63,62 @@ if menu == "🎲 메뉴 추천받기":
             st.warning("조건에 맞는 메뉴가 없습니다. 필터를 조정해주세요.")
         else:
             message_box = st.empty()
+
+            # 💡 [업그레이드 1] 슬롯머신 디자인 적용
             for _ in range(20):
                 temp_name = filtered_df.sample(1).iloc[0]['name']
-                message_box.info(f"🎲 운명의 메뉴 탐색 중... [ {temp_name} ]")
+                # HTML/CSS로 화려한 슬롯머신 박스 만들기
+                slot_html = f"""
+                    <div style="background-color: #262730; border: 5px solid #FF4B4B; border-radius: 20px; padding: 40px; text-align: center; box-shadow: 0 8px 16px rgba(0,0,0,0.3);">
+                        <h3 style="color: #FAFAFA; margin-bottom: 15px;">🎰 운명의 룰렛을 돌리는 중...</h3>
+                        <h1 style="font-size: 60px; color: #FF4B4B; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">{temp_name}</h1>
+                    </div>
+                    """
+                message_box.markdown(slot_html, unsafe_allow_html=True)
                 time.sleep(0.1)
+
             message_box.empty()
 
             result = filtered_df.sample(1).iloc[0]
 
-            # 압도적인 크기의 결과 텍스트
+            # (결과 출력 부분은 기존과 동일)
             st.markdown(f"""
-                <div style='text-align: center; margin: 20px 0;'>
-                    <p style='font-size: 20px; color: gray;'>오늘의 추천 메뉴는 바로!</p>
-                    <h1 style='font-size: 60px; color: #FF4B4B; font-weight: 900; margin: 0;'>{result['name']}</h1>
-                </div>
-            """, unsafe_allow_html=True)
+                    <div style='text-align: center; margin: 20px 0;'>
+                        <p style='font-size: 20px; color: gray;'>오늘의 추천 메뉴는 바로!</p>
+                        <h1 style='font-size: 60px; color: #FF4B4B; font-weight: 900; margin: 0;'>{result['name']}</h1>
+                    </div>
+                """, unsafe_allow_html=True)
 
-            # 지도 버튼
             search_keyword = result['name']
             naver_map_url = f"https://map.naver.com/v5/search/{search_keyword}"
             st.link_button(f"🗺️ 내 주변 '{search_keyword}' 맛집 지도에서 찾기 (클릭)", naver_map_url, use_container_width=True)
 
-            # 사진 및 정보
             st.image(result['image_url'], use_container_width=True)
             st.info(f"💡 카테고리: {result['category']} | ⏰ 추천 시간대: {result['time_slot']}")
             st.write(f"🏷️ 태그: {result['tags']}")
             st.caption(f"📝 설명: {result['desc']}")
-            st.balloons()
+
+            # 💡 [업그레이드 2] 풍선 대신 음식 이모지 비 내리기 (CSS 애니메이션 주입)
+            food_rain_css = """
+                <style>
+                @keyframes fall {
+                    0% { top: -10%; transform: translateX(0) rotate(0deg); opacity: 1; }
+                    100% { top: 110%; transform: translateX(30px) rotate(360deg); opacity: 0; }
+                }
+                .food-emoji {
+                    position: fixed;
+                    font-size: 50px;
+                    z-index: 9999;
+                    animation: fall 3s linear forwards;
+                }
+                </style>
+                <div class="food-emoji" style="left: 10%; animation-duration: 2.5s;">🍔</div>
+                <div class="food-emoji" style="left: 30%; animation-duration: 3.2s; animation-delay: 0.2s;">🍕</div>
+                <div class="food-emoji" style="left: 50%; animation-duration: 2.8s; animation-delay: 0.5s;">🍗</div>
+                <div class="food-emoji" style="left: 70%; animation-duration: 3.5s; animation-delay: 0.1s;">🍣</div>
+                <div class="food-emoji" style="left: 90%; animation-duration: 3.0s; animation-delay: 0.4s;">🍜</div>
+                """
+            st.markdown(food_rain_css, unsafe_allow_html=True)
 
 elif menu == "💬 커뮤니티 (방명록)":
     st.title("💬 사용자 소통 공간")
