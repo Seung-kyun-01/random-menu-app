@@ -2,18 +2,18 @@ import time
 import os
 import pandas as pd
 import streamlit as st
+import requests  # 웹 API 통신을 위해 반드시 추가
 
 # --- 1. 페이지 기본 설정 ---
-# 💡 사이드바와 사용법을 위해 화면을 넓게 쓰도록 layout="wide" 추가
 st.set_page_config(page_title="랜덤 메뉴 추천기", page_icon="🍔", layout="wide")
 
-# 💡 수정됨: 구글 크롬 + 엣지 브라우저 번역 방지 태그를 안전하게 주입
+# 💡 구글 크롬 + 엣지 브라우저 번역 방지 태그 주입
 st.markdown("""
     <meta name="google" content="notranslate">
     <meta name="translate" content="no">
 """, unsafe_allow_html=True)
 
-# 💡 [3번 요청] 메뉴 추천받기 버튼 글자를 초록색으로 바꾸는 CSS 주입
+# 💡 메뉴 추천받기 버튼 글자를 초록색으로 바꾸는 CSS 주입
 st.markdown("""
 <style>
 div.stButton > button p {
@@ -28,6 +28,25 @@ div.stButton > button p {
 @st.cache_data
 def load_data():
     return pd.read_csv("final_menu_db_v3.csv", encoding="utf-8-sig")
+
+
+# 💡 펙셀스 API 호출 함수 (안전장치 보완 완료)
+def get_pexels_image(keyword):
+    API_KEY = "yPL7Frt0A5pkPZbPrXZa7pt056jfFIRy29TK1yQBPBVm38u0KXywiNwp"
+
+    url = f"https://api.pexels.com/v1/search?query={keyword}&per_page=1"
+    headers = {"Authorization": API_KEY}
+
+    try:
+        response = requests.get(url, headers=headers)
+        data = response.json()
+        if data.get("photos") and len(data["photos"]) > 0:
+            return data["photos"][0]["src"]["large"]  # 고화질 이미지 URL 반환
+    except Exception as e:
+        pass
+
+    # 💡 [버그 수정]: API 오류나 트래픽 초과 시 사이트가 멈추지 않도록 기본 음식 사진 리턴!
+    return "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg"
 
 
 COMMENT_FILE = "comments.csv"
@@ -50,17 +69,16 @@ def save_comment(nickname, content):
 
 
 # --- 3. 사이드바 ---
-st.sidebar.title("🍔 목록")  # 💡 1번 요청: 내비게이션 -> 목록 변경
+st.sidebar.title("🍔 목록")
 menu = st.sidebar.radio("이동할 화면을 선택하세요", ["🎲 메뉴 추천받기", "💬 커뮤니티 (방명록)"])
 
 # --- 4. 화면 분기 ---
 if menu == "🎲 메뉴 추천받기":
 
-    # 💡 4번 요청: 화면을 7:3 비율로 나누어 오른쪽에 사용법 배치
+    # 화면을 7:3 비율로 나누어 오른쪽에 사용법 배치
     main_col, guide_col = st.columns([7, 3])
 
     with guide_col:
-        # 애드센스 승인에 큰 도움이 되는 텍스트 콘텐츠 (사용법)
         st.markdown("""
         <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; border-left: 5px solid #28a745; margin-top: 20px;">
             <h3 style="margin-bottom: 15px;">📖 사이트 사용법</h3>
@@ -86,7 +104,6 @@ if menu == "🎲 메뉴 추천받기":
 
         st.divider()
 
-        # 버튼 텍스트는 상단의 CSS를 통해 초록색으로 자동 변경됨
         if st.button("🎲 메뉴 추천받기!", use_container_width=True):
             filtered_df = df[df['time_slot'].isin(selected_times) & df['category'].isin(selected_categories)]
 
@@ -117,7 +134,7 @@ if menu == "🎲 메뉴 추천받기":
                     </div>
                 """, unsafe_allow_html=True)
 
-                # 💡 2번 요청: 지도 버튼 안을 초록색으로 꽉 채우기 (HTML a 태그 활용)
+                # 지도 버튼 안을 초록색으로 꽉 채우기 (HTML a 태그 활용)
                 search_keyword = result['name']
                 naver_map_url = f"https://map.naver.com/v5/search/{search_keyword}"
                 st.markdown(f"""
@@ -126,7 +143,10 @@ if menu == "🎲 메뉴 추천받기":
                 </a>
                 """, unsafe_allow_html=True)
 
-                st.image(result['image_url'], use_container_width=True)
+                with st.spinner("맛있는 사진을 불러오는 중..."):
+                    pexels_img_url = get_pexels_image(result['english_keyword'])
+                    st.image(pexels_img_url, use_container_width=True)
+
                 st.info(f"💡 카테고리: {result['category']} | ⏰ 추천 시간대: {result['time_slot']}")
                 st.write(f"🏷️ 태그: {result['tags']}")
                 st.caption(f"📝 설명: {result['desc']}")
