@@ -144,7 +144,9 @@ if menu == "🎲 메뉴 추천받기":
                 """, unsafe_allow_html=True)
 
                 with st.spinner("맛있는 사진을 불러오는 중..."):
-                    pexels_img_url = get_pexels_image(result['english_keyword'])
+                    # 💡 .get()을 사용하면 DB에 english_keyword 열이 없더라도 에러를 내지 않고 기본값 'delicious food'로 임시 검색해!
+                    search_term = result.get('english_keyword', 'delicious food')
+                    pexels_img_url = get_pexels_image(search_term)
                     st.image(pexels_img_url, use_container_width=True)
 
                 st.info(f"💡 카테고리: {result['category']} | ⏰ 추천 시간대: {result['time_slot']}")
